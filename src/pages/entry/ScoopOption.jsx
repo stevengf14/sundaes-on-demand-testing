@@ -4,7 +4,7 @@ import Row from "react-bootstrap/Row";
 
 export default function ScoopOption({ name, imagePath, updateItemCount }) {
   const handleChange = (event) => {
-    updateItemCount(name, event.target.valueF);
+    updateItemCount(name, event.target.value, "scoops");
   };
 
   return (
