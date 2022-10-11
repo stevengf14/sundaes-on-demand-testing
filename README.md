@@ -9,7 +9,7 @@ Learn best practices for testing your apps with Jest and React Testing Library!
 https://www.udemy.com/course/react-testing-library
 
 ## Certificate
-In progress...
+https://ude.my/UC-61c28797-3956-4168-9a95-245777b82f43/
 
 ## Available Scripts
 
