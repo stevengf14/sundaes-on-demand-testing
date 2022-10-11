@@ -9,7 +9,7 @@ function App() {
   // orderPhase needs to be 'inProgress', 'review' or 'completed'
   const [orderPhase, setOrderPhase] = useState("inProgress");
 
-  let Component = OrderEntry;
+  let Component = OrderEntry; // default to order page
   switch (orderPhase) {
     case "inProgress":
       Component = OrderEntry;
@@ -20,14 +20,13 @@ function App() {
     case "completed":
       Component = OrderConfirmation;
       break;
+    default:
   }
 
   return (
-    <Container>
-      <OrderDetailsProvider>
-        <Component>{<Component setOrderPhase={setOrderPhase} />}</Component>
-      </OrderDetailsProvider>
-    </Container>
+    <OrderDetailsProvider>
+      <Container>{<Component setOrderPhase={setOrderPhase} />}</Container>
+    </OrderDetailsProvider>
   );
 }
 

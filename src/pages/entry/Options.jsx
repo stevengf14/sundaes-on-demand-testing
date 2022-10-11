@@ -1,19 +1,19 @@
 import axios from "axios";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Row from "react-bootstrap/Row";
 import ScoopOption from "./ScoopOption";
 import ToppingOption from "./ToppingOption";
 import AlertBanner from "../common/AlertBanner";
 import { pricePerItem } from "../../constants";
-import { useOrderDetails } from "../../contexts/OrderDetails";
 import { formatCurrency } from "../../utilities";
+import { useOrderDetails } from "../../contexts/OrderDetails";
 
 export default function Options({ optionType }) {
   const [items, setItems] = useState([]);
   const [error, setError] = useState(false);
-  const [orderDetails, updateItemCount] = useOrderDetails();
+  const { totals } = useOrderDetails();
 
-  // optionType is 'scoops' or 'toppings'
+  // optionType is 'scoops' or 'toppings
   useEffect(() => {
     axios
       .get(`http://localhost:3030/${optionType}`)
@@ -22,6 +22,7 @@ export default function Options({ optionType }) {
   }, [optionType]);
 
   if (error) {
+    // @ts-ignore
     return <AlertBanner />;
   }
 
@@ -33,9 +34,6 @@ export default function Options({ optionType }) {
       key={item.name}
       name={item.name}
       imagePath={item.imagePath}
-      updateItemCount={(itemName, newItemCount) =>
-        updateItemCount(itemName, newItemCount, optionType)
-      }
     />
   ));
 
@@ -44,7 +42,7 @@ export default function Options({ optionType }) {
       <h2>{title}</h2>
       <p>{formatCurrency(pricePerItem[optionType])} each</p>
       <p>
-        {title} total: {orderDetails.totals[optionType]}
+        {title} total: {formatCurrency(totals[optionType])}
       </p>
       <Row>{optionItems}</Row>
     </>

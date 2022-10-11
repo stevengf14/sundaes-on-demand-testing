@@ -1,8 +1,9 @@
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import App from "../App";
+import userEvent from "@testing-library/user-event";
 
-test("order phases for happy path", async () => {
+test("Order phases for happy path", async () => {
+  const user = userEvent.setup();
   // render app
   // Don't need to wrap in provider; already wrapped!
   render(<App />);
@@ -11,28 +12,26 @@ test("order phases for happy path", async () => {
   const vanillaInput = await screen.findByRole("spinbutton", {
     name: "Vanilla",
   });
-  userEvent.clear(vanillaInput);
-  userEvent.type(vanillaInputm, "1");
+  await user.clear(vanillaInput);
+  await user.type(vanillaInput, "1");
 
-  const chocolateInput = await screen.findByRole("spinbutton", {
-    name: "Chocolate",
-  });
-  userEvent.clear(chocolateInput);
-  userEvent.type(chocolateInput, "2");
+  const chocolateInput = screen.getByRole("spinbutton", { name: "Chocolate" });
+  await user.clear(chocolateInput);
+  await user.type(chocolateInput, "2");
 
   const cherriesCheckbox = await screen.findByRole("checkbox", {
     name: "Cherries",
   });
-  userEvent.click(cherriesCheckbox);
+  await user.click(cherriesCheckbox);
 
-  // find and click order button
-  const orderSummaryButton = await screen.findByRole("button", {
+  // find and click order summary button
+  const orderSummaryButton = screen.getByRole("button", {
     name: /order sundae/i,
   });
-  userEvent.click(orderSummaryButton);
+  await user.click(orderSummaryButton);
 
-  // check summary information based on order
-  const summaryHeading = screen.getByRole("heading", { name: "OrderSummary" });
+  // check summary subtotals
+  const summaryHeading = screen.getByRole("heading", { name: "Order Summary" });
   expect(summaryHeading).toBeInTheDocument();
 
   const scoopsHeading = screen.getByRole("heading", { name: "Scoops: $6.00" });
@@ -48,38 +47,82 @@ test("order phases for happy path", async () => {
   expect(screen.getByText("2 Chocolate")).toBeInTheDocument();
   expect(screen.getByText("Cherries")).toBeInTheDocument();
 
-  // accept terms and conditions and click button to confirm order
+  // // alternatively...
+  // // const optionItems = screen.getAllByRole('listitem');
+  // // const optionItemsText = optionItems.map((item) => item.textContent);
+  // // expect(optionItemsText).toEqual(['1 Vanilla', '2 Chocolate', 'Cherries']);
+
+  // accept terms and click button
   const tcCheckbox = screen.getByRole("checkbox", {
     name: /terms and conditions/i,
   });
-  userEvent.click(tcCheckbox);
+  await user.click(tcCheckbox);
 
   const confirmOrderButton = screen.getByRole("button", {
     name: /confirm order/i,
   });
-  userEvent.click(confirmOrderButton);
+  await user.click(confirmOrderButton);
 
-  // confirm order number on confirmation page
-  // this one is async because there is a POST request to server in between server and confirmation pages
+  // Expect "loading" to show
+  const loading = screen.getByText(/loading/i);
+  expect(loading).toBeInTheDocument();
+
+  // check confirmation page text
+  // this one is async because there is a POST request to server in between summary
+  //    and confirmation pages
   const thankYouHeader = await screen.findByRole("heading", {
     name: /thank you/i,
   });
   expect(thankYouHeader).toBeInTheDocument();
 
+  // expect that loading has disappeared
+  const notLoading = screen.queryByText("loading");
+  expect(notLoading).not.toBeInTheDocument();
+
   const orderNumber = await screen.findByText(/order number/i);
   expect(orderNumber).toBeInTheDocument();
 
-  // click "new order" button on confirmation page
+  // find and click "new order" button on confirmation page
   const newOrderButton = screen.getByRole("button", { name: /new order/i });
-  userEvent.click(newOrderButton);
+  await user.click(newOrderButton);
 
-  // check that scoops and toppings subtotals have been reset
-  const scoopsTotal = screen.getByText("Scoops total: $0.00");
+  // check that scoops and toppings have been reset
+  const scoopsTotal = await screen.findByText("Scoops total: $0.00");
   expect(scoopsTotal).toBeInTheDocument();
   const toppingsTotal = screen.getByText("Toppings total: $0.00");
   expect(toppingsTotal).toBeInTheDocument();
 
-  // do we need to await anything to avoid test errors?
+  // wait for items to appear so that Testing Library doesn't get angry about stuff
+  // happening after test is over
   await screen.findByRole("spinbutton", { name: "Vanilla" });
   await screen.findByRole("checkbox", { name: "Cherries" });
+});
+
+test("Toppings header is not on summary page if no toppings ordered", async () => {
+  const user = userEvent.setup();
+  // render app
+  render(<App />);
+
+  // add ice cream scoops but no toppings
+  const vanillaInput = await screen.findByRole("spinbutton", {
+    name: "Vanilla",
+  });
+  await user.clear(vanillaInput);
+  await user.type(vanillaInput, "1");
+
+  const chocolateInput = screen.getByRole("spinbutton", { name: "Chocolate" });
+  await user.clear(chocolateInput);
+  await user.type(chocolateInput, "2");
+
+  // find and click order summary button
+  const orderSummaryButton = screen.getByRole("button", {
+    name: /order sundae/i,
+  });
+  await user.click(orderSummaryButton);
+
+  const scoopsHeading = screen.getByRole("heading", { name: "Scoops: $6.00" });
+  expect(scoopsHeading).toBeInTheDocument();
+
+  const toppingsHeading = screen.queryByRole("heading", { name: /toppings/i });
+  expect(toppingsHeading).not.toBeInTheDocument();
 });

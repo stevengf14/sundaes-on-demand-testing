@@ -1,69 +1,59 @@
-import { createContext, useContext, useState, useMemo, useEffect } from "react";
+import { createContext, useContext, useState } from "react";
 import { pricePerItem } from "../constants";
-import { formatCurrency } from "../utilities";
 
 const OrderDetails = createContext();
 
-// create custom hook to check whether we're inside a provider
+// create custom hook to check whether we're in a provider
 export function useOrderDetails() {
-  const context = useContext(OrderDetails);
-  if (!context) {
+  const contextValue = useContext(OrderDetails);
+
+  if (!contextValue) {
     throw new Error(
-      "useOrderDetails must be used within an OrderDetailsProvider"
+      "useOrderDetails must be called from within an OrderDetailsProvider"
     );
   }
-  return context;
-}
 
-function calculateSubtotal(optionType, optionCounts) {
-  let optionCount = 0;
-  for (const count of optionCounts[optionType].values()) {
-    optionCount += count;
-  }
-
-  return optionCount * pricePerItem[optionType];
+  return contextValue;
 }
 
 export function OrderDetailsProvider(props) {
   const [optionCounts, setOptionCounts] = useState({
-    scoops: new Map(),
-    toppings: new Map(),
+    scoops: {}, // example: { Chocolate: 1, Vanilla: 2 }
+    toppings: {}, // example: { "Gummi Bears": 1 }
   });
 
-  const zeroCurrency = formatCurrency(0);
+  function updateItemCount(itemName, newItemCount, optionType) {
+    // make a copy of existing state
+    const newOptionCounts = { ...optionCounts };
 
-  const [totals, setTotals] = useState({
-    scoops: zeroCurrency,
-    toppings: zeroCurrency,
-    grandTotal: zeroCurrency,
-  });
+    // update the copy with the new information
+    newOptionCounts[optionType][itemName] = newItemCount;
 
-  useEffect(() => {
-    const scoopsSubtotal = calculateSubtotal("scoops", optionCounts);
-    const toppingsSubtotal = calculateSubtotal("toppings", optionCounts);
-    const grandTotal = scoopsSubtotal + toppingsSubtotal;
-    setTotals({
-      scoops: formatCurrency(scoopsSubtotal),
-      toppings: formatCurrency(toppingsSubtotal),
-      grandTotal: formatCurrency(grandTotal),
-    });
-  }, [optionCounts]);
+    // update the state with the updated copy
+    setOptionCounts(newOptionCounts);
+  }
 
-  const value = useMemo(() => {
-    function updateItemCount(itemName, newItemCount, optionType) {
-      const newOptionCounts = { ...optionCounts };
+  function resetOrder() {
+    setOptionCounts({ scoops: {}, toppings: {} });
+  }
 
-      // update option count for this item with the new value
-      const optionCountsMap = optionCounts[optionType];
-      optionCountsMap.set(itemName, parseInt(newItemCount));
+  // utility function to derive totals from optionCounts state value
+  function calculateTotal(optionType) {
+    // get an array of counts for the option type (for example, [1, 2])
+    const countsArray = Object.values(optionCounts[optionType]);
 
-      setOptionCounts(newOptionCounts);
-    }
+    // total the values in the array of counts for the number of items
+    const totalCount = countsArray.reduce((total, value) => total + value, 0);
 
-    // getter: object containing option counts for scoops and toppings, subtotals and totals
-    // setter: updateOptionCount
-    return [{ ...optionCounts, totals }, updateItemCount, resetOrder];
-  }, [optionCounts]);
+    // multiply the total number of items by the price for this item type
+    return totalCount * pricePerItem[optionType];
+  }
 
+  const totals = {
+    scoops: calculateTotal("scoops"),
+    toppings: calculateTotal("toppings"),
+  };
+
+  const value = { optionCounts, totals, updateItemCount, resetOrder };
   return <OrderDetails.Provider value={value} {...props} />;
 }

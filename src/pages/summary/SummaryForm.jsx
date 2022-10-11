@@ -1,5 +1,8 @@
 import React, { useState } from "react";
-import { Form, Button, Popover, OverlayTrigger } from "react-bootstrap";
+import Form from "react-bootstrap/Form";
+import Button from "react-bootstrap/Button";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Popover from "react-bootstrap/Popover";
 
 export default function SummaryForm({ setOrderPhase }) {
   const [tcChecked, setTcChecked] = useState(false);
@@ -13,7 +16,7 @@ export default function SummaryForm({ setOrderPhase }) {
   }
 
   const popover = (
-    <Popover id="termsandconditions-popover">
+    <Popover id="popover-basic">
       <Popover.Body>No ice cream will actually be delivered</Popover.Body>
     </Popover>
   );
